@@ -14,3 +14,5 @@ _assets/og-image/
 tutorials/**/*.html
 **/_tmp_*.jl
 **/*backup*.jl
+
+.vscode/

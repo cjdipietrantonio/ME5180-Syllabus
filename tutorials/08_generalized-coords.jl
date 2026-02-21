@@ -4,107 +4,185 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 2bdf7f1e-7cdd-11ec-09f3-93564593f4c1
-using OrdinaryDiffEq, Plots
+# ╔═╡ 2efb33b8-0dc6-11f1-a154-e7b56b5e32cd
+using Plots, OrdinaryDiffEq
 
-# ╔═╡ 0e4cf5bf-b584-4bcb-a512-c925b1cc37a7
-# hideall
-title = "An ordinary differential equation";
+# ╔═╡ 8845bdf4-c621-4612-b1ef-40a82526d0ca
+md"""# Using generalized coordinates and Lagrange Equations
 
-# ╔═╡ 4bc6d576-2c37-4ad0-a866-de8bbc2a32c0
+[![Generalized Coordinates part 1](https://img.youtube.com/vi/9HsI6DQ5ddw/0.jpg)](https://www.youtube.com/watch?v=9HsI6DQ5ddw "Generalized Coordinates part 1 - click to watch")
+
+[![Generalized Coordinates part 2](https://img.youtube.com/vi/WaPgd_RsiXc/0.jpg)](https://www.youtube.com/watch?v=WaPgd_RsiXc "Generalized Coordinates part 2 - click to watch")
+
+In this example, we are considering the motion of 3 objects attached by pulleys to a supporting ceiling. 
+
+![Three blocks attached to two pulleys. Block one is connected to the second pulley and blocks 2 and 3 and attached](https://raw.githubusercontent.com/cooperrc/dynamics/refs/heads/main/images/pulley-system.png)
+
+This system has 5 moving parts: 2 pulleys and 3 blocks
+
+but, there are only **2 independent degrees of freedom**
+
+We can choose different ways to describe the _state_ of the system, but we can only choose **2 independent generalized coordinates**. 
+
+In this case, we use
+
+$\mathbf{q} = [y_1,~y_2]$
+
+Using system pulley constraints, the following relations are true, 
+
+$\dot{s}_2 = \dot{y}_1 - \dot{y}_2$
+
+and
+
+$\dot{s}_3 = \dot{y}_1 + \dot{y}_2$
+
+and the total kinetic energy is
+
+$T = \frac{1}{2}m_1\dot{y}_1^2 + \frac{1}{2}m_2\dot{s}_2^2 +\frac{1}{2}m_3\dot{s}_3^2$
 """
-+++
-title = "$title"
-+++
-""" |> Base.Text
 
-# ╔═╡ 6b053af4-cc52-4895-9fb2-a068dc81030b
+# ╔═╡ 2ab528c2-baf7-4f07-a761-3b0765d04c9f
+md"""where it follows, 
+
+$T = \frac{1}{2}m_1\dot{y}_1^2 + \frac{1}{2}m_2(\dot{y}_1 - \dot{y}_2)^2 +\frac{1}{2}m_3(\dot{y}_1 + \dot{y}_2)_3^2$
+
+and the potential energy changes are given as
+
+$V = -m_1gy_1 + m_2g s_2 + m_3 g s_3$
+
+or
+
+$V = -m_1gy_1 + m_2g(y_1 - y_2) + m_3 g (y_1 + y_2)$
+
+
+The Lagrange equations create differential equations that relate all the degrees of freedom. In this case, we will have 2 second order differential equations, 
+
+1. $\frac{d}{dt}\left(\frac{\partial L}{\partial \dot{y}_1}\right) = \frac{\partial L}{\partial y_1}$
+2. $\frac{d}{dt}\left(\frac{\partial L}{\partial \dot{y}_2}\right) = \frac{\partial L}{\partial y_2}$
+
+_or_
+
+1. $(m_1 + m_2 + m_3)\ddot{y}_1 + (m_3 - m_2)\ddot{y}_2 = (m_1 - m_2 - m_3)g$
+2. $(m_3 - m_2)\ddot{y}_1 + (m_2 + m_3)\ddot{y}_2 = (m_2 - m_3)g$
+"""
+
+# ╔═╡ 00bece6d-cdbf-482e-adef-f4799dc2d7ca
+md"""If all the masses are equal, only $y_1$ should change. If $m_2+m_3 = m_1$, what happens next? Will the motion of blocks 2 and 3 move block 1?
+
+"""
+
+# ╔═╡ 48762a8a-d96b-43e0-a279-c0bb38bb1205
+@doc raw"""
+Solve for accelerations a1 and a2 for motion of blocks in the given pulley system. 
+1. $(m_1 + m_2 + m_3)\ddot{y}_1 + (m_3 - m_2)\ddot{y}_2 = (m_1 - m_2 - m_3)g$
+2. $(m_3 - m_2)\ddot{y}_1 + (m_2 + m_3)\ddot{y}_2 = (m_2 - m_3)g$
+"""
+function pulley_accel(m1, m2, m3)
+
+	g = 9.81
+	
+	M = [m1+m2+m3 m3 - m2;
+		m3-m2 m2+m3]
+	b = [m1 - m2 - m3;
+	m2-m3]*9.81
+	
+	return M\b
+end
+
+# ╔═╡ 5c099fb4-05e8-4677-ac27-5cf7ba6a2d04
+pulley_accel(1, 0.8, 0.2)
+
+# ╔═╡ 05c630ef-de36-4492-8b5a-a8c8455156f9
 md"""
-# $title
+## Wrapping up
+We have constant acceleration for three blocks with constrained motion. The kinematic equations demonstrate motion
 
-This page shows a part of a tutorial by [SciML](https://github.com/SciML/) (<https://docs.sciml.ai/DiffEqDocs/stable/examples/classical_physics/>).
+$x_i(t) = x_0 + v_0t + \frac{1}{2}at^2$
 
-In the tutorial, a simple harmonic oscillator is shown.
-It is given by
-
-```math
-\ddot{x} + \omega^2 x = 0
-```
-
-with the analytical solution
-
-```math
-\begin{eqnarray}
-x(t) &= A \cos (\omega t - \phi) \\
-v(t) &= - A \omega \sin (\omega t - \phi)
-\end{eqnarray}
-```
-
-where
-
-```math
-A = \sqrt{c_1 + c_2} \: \: \: \: \: \text{and} \: \: \: \: \: \tan \phi = \frac{c_2}{c_1}
-```
-
-with $c_1$, $c_2$ constants determined by the initial conditions such that $c_1$ is the initial position and $\omega c_2$ is the initial velocity.
-
-Instead of transforming this to a system of ODEs to solve with `ODEProblem`, we can use `SecondOrderODEProblem` as follows.
+Below, there are a lot of filler functions for plotting pulleys and blocks. The result is that you can play with the masses of each block to see the motion over 0.5 sec. Try some different values for $m_1,~m_2,~m_3$ and see what the results are? Can you get $m_1$ to stay motionless while $m_2$ and $m_3$ move?
 """
 
-# ╔═╡ f4a00686-979f-4498-ae73-8833c1c8320f
-md"With parameter:"
+# ╔═╡ 3152bf14-d14a-44b9-beb9-2281b01b19f3
+begin
+	function draw_block!(plot_layout, center_position; block_width=0.25, block_height=0.2, label_text="")
+	    center_x, center_y = center_position
+	    half_width, half_height = block_width/2, block_height/2
+	    x_values = [center_x-half_width, center_x+half_width, center_x+half_width, center_x-half_width, center_x-half_width]
+	    y_values = [center_y-half_height, center_y-half_height, center_y+half_height, center_y+half_height, center_y-half_height]
+	    plot!(plot_layout, x_values, y_values, seriestype=:shape, c=:white, linecolor=:black, label="")
+	    if !isempty(label_text)
+	        annotate!(plot_layout, center_x, center_y, text(label_text, :center, 8))
+	    end
+	end
+	
+	function draw_pulley!(plot_layout, center_position; radius=0.2)
+	    center_x, center_y = center_position
+	    angle_values = range(0, 2π; length=80)
+	    x_values = [center_x + radius*cos(angle_value) for angle_value in angle_values]
+	    y_values = [center_y + radius*sin(angle_value) for angle_value in angle_values]
+	    plot!(plot_layout, x_values, y_values, c=:white, linecolor=:black, label="")
+	    scatter!(plot_layout, [center_x], [center_y]; markersize=2, color=:black, label="")
+	end
+	
+end
 
-# ╔═╡ a77eb791-9c08-4587-a407-fff318e2163e
-ω = 1;
+# ╔═╡ 8dbc0cd8-6adb-4a4c-9759-ac93c7d156b6
+function plot_pulley_diagram(block_positions, pulley_positions)
+    all_positions = vcat(collect(values(block_positions)), collect(values(pulley_positions)))
+    all_x = [p[1] for p in all_positions]; all_y = [p[2] for p in all_positions]
+    min_x, max_x = minimum(all_x)-0.5, maximum(all_x)+0.5; min_y, max_y = minimum(all_y)-0.5, maximum(all_y)+0.7
+    top_y, bottom_y = max_y, min_y
+    plot_layout = plot(; xlim=(min_x,max_x), ylim=(bottom_y,top_y),
+                       aspect_ratio=:equal, legend=false, framestyle=:box)
+    plot!(plot_layout, [min_x,max_x], [top_y,top_y], color=:black); 
+	
+    pulley1_position = pulley_positions[:circle1]; pulley2_position = pulley_positions[:circle2]
+	pulley1_radius,pulley2_radius = 0.5,0.2
+    plot!(plot_layout, [pulley1_position[1],pulley1_position[1]], [top_y,pulley1_position[2]+pulley1_radius], color=:black, linewidth=2)
+    draw_pulley!(plot_layout, pulley1_position; radius=pulley1_radius); draw_pulley!(plot_layout, pulley2_position; radius=pulley2_radius)
+    draw_block!(plot_layout, block_positions[:block1]; label_text="m1"); draw_block!(plot_layout, block_positions[:block2]; label_text="m2");
+    draw_block!(plot_layout, block_positions[:block3]; label_text="m3")
+    block1_position = block_positions[:block1]; block2_position = block_positions[:block2]; block3_position = block_positions[:block3]; block_height = 0.2
+    plot!(plot_layout, [pulley1_position[1]-pulley1_radius,pulley1_position[1]-pulley1_radius], [pulley1_position[2], block1_position[2]+block_height/2], color=:red)
+	plot!(plot_layout, [pulley1_position[1]+pulley1_radius,pulley1_position[1]+pulley1_radius], [pulley1_position[2], pulley2_position[2]], color=:red)
+    plot!(plot_layout, [pulley2_position[1]+pulley2_radius,pulley2_position[1]+pulley2_radius],
+          [pulley2_position[2], block3_position[2]+block_height/2], color=:black)
+	plot!(plot_layout, [pulley2_position[1]-pulley2_radius,pulley2_position[1]-pulley2_radius],
+          [pulley2_position[2], block2_position[2]+block_height/2], color=:black)
+ return plot_layout
+end
 
-# ╔═╡ 1c020400-7dc2-4d42-acad-10817e9a31ac
-md"and initial conditions:"
+# ╔═╡ e8a2fbe0-b7f9-4b70-8960-94d6c10997ff
+function calc_motion(m1, m2, m3, 
+					N = 50)
+	t = LinRange(0, 0.5, N)
+	a1, a2 = pulley_accel(m1, m2, m3)
+	y1 = 1 .- a1.*t.^2/2
+	p2 = 0.5 .+ a1.*t.^2/2
+	y2 = -a2.*t.^2/2 .+ p2 .- 1
+	y3 = a2.*t.^2/2 .+ p2 .- 1
+	return y1, p2, y2, y3
+end
 
-# ╔═╡ e9babd6f-1164-41dd-adfa-d9ea68d6d65d
-x₀ = [0.0];
-
-# ╔═╡ ca022fd6-4468-4e09-9ca6-9389cba741af
-dx₀ = [π / 2];
-
-# ╔═╡ 7b1f0c89-b7f2-4d77-a4a8-d22667612245
-tspan = (0.0, 2π);
-
-# ╔═╡ 11a661d7-489b-4ee4-9cd2-1987c4f354a0
-ϕ = atan((dx₀[1] / ω) / x₀[1]);
-
-# ╔═╡ cd57bfef-9925-4eb6-a4b4-c37cc6ee4877
-A = √(x₀[1]^2 + dx₀[1]^2);
-
-# ╔═╡ 5d486c91-d950-4304-81df-63540b23df68
-md"We define the problem as follows:"
-
-# ╔═╡ ec7199eb-8b64-4078-9971-be491fcc6d5d
-function harmonicoscillator(ddu, du, u, ω, t)
-    ddu .= -ω^2 * u
-end;
-
-# ╔═╡ a7bba924-5ab4-4087-b6d2-00b8372a5b48
-md"And pass it to the solvers:"
-
-# ╔═╡ 4dfb3923-e3d7-4905-aa9b-fcdb4986f5bb
-prob = SecondOrderODEProblem(harmonicoscillator, dx₀, x₀, tspan, ω);
-
-# ╔═╡ 9e1c0ca8-47e6-44ab-baea-9670e2b11802
-sol = solve(prob, DPRKN6())
-
-# ╔═╡ 5bd927dd-562b-4063-a807-2a7abad56b0c
-let
-    plot(
-        sol,
-        vars=[2, 1],
-        linewidth=2,
-        title="Simple Harmonic Oscillator",
-        xaxis="Time",
-        yaxis="Elongation",
-        label=["x" "dx"],
-    )
-    plot!(t -> A * cos(ω * t - ϕ), lw=3, ls=:dash, label="Analytical Solution x")
-    plot!(t -> -A * ω * sin(ω * t - ϕ), lw=3, ls=:dash, label="Analytical Solution dx")
+# ╔═╡ cc32f911-e21f-434f-82ff-8693d77827b7
+begin
+	y1, p2, y2, y3 = calc_motion(1, 0.2, 0.8)
+	@gif for i in 1:length(y1)
+		block_positions = Dict(
+		    :block1 => (1.0, y1[i]),
+		    :block2 => (1.8, y2[i]),
+		    :block3 => (2.2, y3[i]),
+		)
+		
+		pulley_positions = Dict(
+		    :circle1 => (1.5, 2.0),  # big pulley
+		    :circle2 => (2.0, p2[i]),  # small pulley
+		)
+		
+		diagram_plot = plot_pulley_diagram(block_positions, pulley_positions)
+		ylims!(-2, 3)
+		diagram_plot
+	end
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -2394,23 +2472,16 @@ version = "1.13.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═0e4cf5bf-b584-4bcb-a512-c925b1cc37a7
-# ╠═4bc6d576-2c37-4ad0-a866-de8bbc2a32c0
-# ╠═6b053af4-cc52-4895-9fb2-a068dc81030b
-# ╠═2bdf7f1e-7cdd-11ec-09f3-93564593f4c1
-# ╠═f4a00686-979f-4498-ae73-8833c1c8320f
-# ╠═a77eb791-9c08-4587-a407-fff318e2163e
-# ╠═1c020400-7dc2-4d42-acad-10817e9a31ac
-# ╠═e9babd6f-1164-41dd-adfa-d9ea68d6d65d
-# ╠═ca022fd6-4468-4e09-9ca6-9389cba741af
-# ╠═7b1f0c89-b7f2-4d77-a4a8-d22667612245
-# ╠═11a661d7-489b-4ee4-9cd2-1987c4f354a0
-# ╠═cd57bfef-9925-4eb6-a4b4-c37cc6ee4877
-# ╠═5d486c91-d950-4304-81df-63540b23df68
-# ╠═ec7199eb-8b64-4078-9971-be491fcc6d5d
-# ╠═a7bba924-5ab4-4087-b6d2-00b8372a5b48
-# ╠═4dfb3923-e3d7-4905-aa9b-fcdb4986f5bb
-# ╠═9e1c0ca8-47e6-44ab-baea-9670e2b11802
-# ╠═5bd927dd-562b-4063-a807-2a7abad56b0c
+# ╠═8845bdf4-c621-4612-b1ef-40a82526d0ca
+# ╠═2ab528c2-baf7-4f07-a761-3b0765d04c9f
+# ╠═2efb33b8-0dc6-11f1-a154-e7b56b5e32cd
+# ╟─00bece6d-cdbf-482e-adef-f4799dc2d7ca
+# ╠═48762a8a-d96b-43e0-a279-c0bb38bb1205
+# ╠═5c099fb4-05e8-4677-ac27-5cf7ba6a2d04
+# ╠═05c630ef-de36-4492-8b5a-a8c8455156f9
+# ╟─3152bf14-d14a-44b9-beb9-2281b01b19f3
+# ╟─8dbc0cd8-6adb-4a4c-9759-ac93c7d156b6
+# ╠═e8a2fbe0-b7f9-4b70-8960-94d6c10997ff
+# ╠═cc32f911-e21f-434f-82ff-8693d77827b7
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
